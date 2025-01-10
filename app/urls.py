@@ -8,5 +8,4 @@ router.register('users', views.UserViewSet)
 router.register('account', views.AccountViewSet, basename='account')
 urlpatterns = [
     path('', include(router.urls)),
-
 ]

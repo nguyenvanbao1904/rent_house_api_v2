@@ -1,5 +1,11 @@
 from pathlib import Path
 
+import os
+from dotenv import load_dotenv
+
+# Tải tệp .env
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -9,7 +15,12 @@ SECRET_KEY = 'django-insecure-g7_a@=x$x*#2dxm)u03u-kujtofcm0h0ecc$d0(v)2=#)qidk#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '10.0.2.2'
+]
 
 # Application definition
 
@@ -25,17 +36,27 @@ INSTALLED_APPS = [
     'rest_framework',
     'social_django',
     'oauth2_provider',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',  # Đảm bảo middleware này hoạt động
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://10.0.2.2",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'RentHouseApi.urls'
 
@@ -67,11 +88,11 @@ WSGI_APPLICATION = 'RentHouseApi.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rent_house_db',
-        'USER': 'root',
-        'PASSWORD': '12345678',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('MYSQL_DATABASE'),
+        'USER': os.getenv('MYSQL_USER'),
+        'PASSWORD': os.getenv('MYSQL_PASSWORD'),
+        'HOST': os.getenv('MYSQL_HOST'),
+        'PORT': os.getenv('MYSQL_PORT'),
     }
 }
 
@@ -125,12 +146,6 @@ MEDIA_ROOT = '%s/app/static/' % BASE_DIR
 
 # cho phep dang ky token bang json thay vi from data cua post
 OAUTH2_PROVIDER = {'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore'}
-
-import os
-from dotenv import load_dotenv
-
-# Tải tệp .env
-load_dotenv()
 
 # Cloudinary Configuration
 import cloudinary
