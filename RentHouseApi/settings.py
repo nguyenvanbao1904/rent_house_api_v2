@@ -16,6 +16,7 @@ SECRET_KEY = 'django-insecure-g7_a@=x$x*#2dxm)u03u-kujtofcm0h0ecc$d0(v)2=#)qidk#
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    'renthouseapiv2-production.up.railway.app',
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
@@ -51,6 +52,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    "renthouseapiv2-production.up.railway.app",
     "http://localhost",
     "http://127.0.0.1",
     "http://10.0.2.2",
