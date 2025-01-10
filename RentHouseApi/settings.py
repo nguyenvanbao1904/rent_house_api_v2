@@ -58,6 +58,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://10.0.2.2",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://renthouseapiv2-production.up.railway.app",
+]
+
+
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'RentHouseApi.urls'
@@ -196,6 +201,3 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
 }
-# DOT
-Client_id = 'YxWKmdKH1ALuKOSjghUFwte2fIhXzRPi40GjKE3V'
-Client_secret = 'UnZvZcjiiOu2eRcxxYVOpMzPx2seXZ1rLdmK4AzSSrQI0jNBp7uAaKFnRxFLcSZHca7WPM9UHSxGrTlZucFKsu0FpFMm7rGfweyzTqG9k3oadsvDdE5pBRjxEN9RdGKC'
