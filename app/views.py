@@ -1,13 +1,13 @@
 from cloudinary.uploader import upload
 from django.utils import timezone
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 
-from app.models import User
-from app.serializers import UserSerializer
+from app.models import User, Image
+from app.serializers import UserSerializer, ImageSerializer
 from django.http import JsonResponse
 
 
@@ -97,3 +97,7 @@ class AccountViewSet(viewsets.ViewSet):
             return Response(status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = Image.objects.all()
+    serializer_class = ImageSerializer

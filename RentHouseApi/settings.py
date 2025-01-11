@@ -201,3 +201,6 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
 }
+
+# CLIENT_ID = uxcqnSM8xosdWQZ5OHYGccRy7OsUncKDHvAoUuXD
+# CLIENT_SECRET = qUa62PnBlhoCpfeJTzQhqyG1X7iFkIabCB1e2byl5jVpMin843WXEmDbchJMbAdJv3opdviatmaM57Ue3bAWqhbTb9lbnTq75p1Hlp79rojX55PTiC4Nf8VVxUMj9S5h

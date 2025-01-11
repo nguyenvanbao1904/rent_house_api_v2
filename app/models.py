@@ -1,8 +1,9 @@
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from cloudinary.models import CloudinaryField
 from django.db.models.fields import CharField
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 
 class UserManager(BaseUserManager):
@@ -12,7 +13,7 @@ class UserManager(BaseUserManager):
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
-        user.avatar = "https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07mCJ6esXL.jpg"
+        user.avatar_url = "https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07mCJ6esXL.jpg"
         user.save()
         return user
 
@@ -53,6 +54,7 @@ class Follow(models.Model):
 class Post(models.Model):
     class Meta:
         abstract = True
+    title = models.CharField(max_length=255)
     content = models.TextField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -64,38 +66,34 @@ class Address(models.Model):
         abstract = True
     city = models.CharField(max_length=100, null=False, blank=False)
     district = models.CharField(max_length=100, null=False, blank=False)
+    ward = models.CharField(max_length=100, null=False, blank=False)
     detail_address = models.TextField(null=False, blank=False)
 
-class RoomImage(models.Model):
+class RentalPostStatus(models.TextChoices):
+    PENDING = 'Pending'
+    ALLOW = 'Allow'
+    DENY = 'Deny'
+
+class Image(models.Model):
     image_url = CloudinaryField('image', null=False, blank=False)
-    room = models.ForeignKey('Room', on_delete=models.CASCADE, related_name='images')
-
-class Room(Address):
-    name = models.CharField(max_length=100, null=False, blank=False)
-    area = models.FloatField(null=False, blank=False)
-    num_of_bedrooms = models.IntegerField(null=True, blank=True)
-    num_of_bathrooms = models.IntegerField(null=True, blank=True)
-
-    def clean(self):
-        if self.images.count() < 3:
-            raise ValidationError('A room must have at least 3 images.')
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+    is_active = models.BooleanField(default=True)
 
 class FindRoomPost(Post, Address):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='find_room_post')
+    images = models.ManyToManyField(Image, related_name='find_room_post')
 
 class RentalPost(Post, Address):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rental_post')
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='rental_post')
+    area = models.FloatField(null=False, blank=False)
+    status = models.CharField(max_length=20, choices=RentalPostStatus.choices, default=RentalPostStatus.PENDING)
+    images = models.ManyToManyField(Image, related_name='rental_post')
 
 class Comment(models.Model):
     content = models.TextField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
     image_url = CloudinaryField('image', null=False, blank=False)
     updated_at = models.DateTimeField(auto_now=True)
-    find_room_post = models.ForeignKey(FindRoomPost, on_delete=models.CASCADE)
-    rental_post = models.ForeignKey(RentalPost, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
