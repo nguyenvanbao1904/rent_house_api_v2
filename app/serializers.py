@@ -16,7 +16,6 @@ class ImageSerializer(ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        print(data)
         if data['image_url'] is not None:
             data['image_url'] = instance.image_url.url
         return data

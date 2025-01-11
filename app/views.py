@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 
-from app.models import User, Image
+from app.models import User, Image, RentalPost
 from app.serializers import UserSerializer, ImageSerializer
 from django.http import JsonResponse
 
@@ -101,3 +101,7 @@ class AccountViewSet(viewsets.ViewSet):
 class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView):
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class RentalViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = RentalPost.objects.all()
