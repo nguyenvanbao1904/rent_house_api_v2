@@ -7,7 +7,7 @@ from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 
 from app.models import User, Image, RentalPost
-from app.serializers import UserSerializer, ImageSerializer
+from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer
 from django.http import JsonResponse
 
 
@@ -98,10 +98,17 @@ class AccountViewSet(viewsets.ViewSet):
         except Exception as e:
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView):
-    queryset = Image.objects.all()
+class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView):
+    queryset = Image.objects.filter(is_active=True).all()
     serializer_class = ImageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class RentalViewSet(viewsets.ViewSet, generics.CreateAPIView):
+class RentalViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView):
     queryset = RentalPost.objects.all()
+    serializer_class = RentalPostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
