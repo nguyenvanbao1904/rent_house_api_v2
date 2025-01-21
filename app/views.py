@@ -1,3 +1,5 @@
+from multiprocessing.connection import address_type
+
 from cloudinary.uploader import upload
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, generics
@@ -5,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
+from django.db.models import Q
 
 from app.models import User, Image, RentalPost, FindRoomPost
 from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer
@@ -107,6 +110,31 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = RentalPost.objects.filter(is_active = True).all()
     serializer_class = RentalPostSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        query = self.queryset
+        city = self.request.query_params.get('city', None)
+        district = self.request.query_params.get('district', None)
+        ward = self.request.query_params.get('ward', None)
+        min_price = self.request.query_params.get('min_price', None)
+        max_price = self.request.query_params.get('max_price', None)
+        occupants = self.request.query_params.get('occupants', None)
+        address = self.request.query_params.get('address', None)
+        if city:
+            query = query.filter(city=city)
+        if district:
+            query = query.filter(district=district)
+        if ward:
+            query = query.filter(ward=ward)
+        if min_price:
+            query = query.filter(price__gte=min_price)
+        if max_price:
+            query = query.filter(price__lte=max_price)
+        if occupants:
+            query = query.filter(Q(max_occupants=occupants) | Q(max_occupants__isnull=True))
+        if address:
+            query = query.filter(detail_address__icontains=address)
+        return query
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

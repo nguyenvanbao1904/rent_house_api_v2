@@ -84,6 +84,7 @@ class FindRoomPost(Post, Address):
 class RentalPost(Post, Address):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rental_post')
     area = models.FloatField(null=False, blank=False)
+    max_occupants = models.IntegerField(null=True)
     status = models.CharField(max_length=20, choices=RentalPostStatus.choices, default=RentalPostStatus.PENDING)
     images = models.ManyToManyField(Image, related_name='rental_post')
 
