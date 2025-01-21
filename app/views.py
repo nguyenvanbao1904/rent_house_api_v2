@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 
-from app.models import User, Image, RentalPost
-from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer
+from app.models import User, Image, RentalPost, FindRoomPost
+from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer
 from django.http import JsonResponse
 
 
@@ -103,9 +103,19 @@ class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView):
     serializer_class = ImageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class RentalViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView, generics.RetrieveAPIView, generics.DestroyAPIView, generics.UpdateAPIView):
+class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = RentalPost.objects.filter(is_active = True).all()
     serializer_class = RentalPostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
+    queryset = FindRoomPost.objects.filter(is_active = True).all()
+    serializer_class = FindRoomPostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_context(self):

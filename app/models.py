@@ -80,7 +80,6 @@ class Image(models.Model):
 
 class FindRoomPost(Post, Address):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='find_room_post')
-    images = models.ManyToManyField(Image, related_name='find_room_post')
 
 class RentalPost(Post, Address):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rental_post')

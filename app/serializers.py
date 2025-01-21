@@ -1,7 +1,7 @@
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
 
-from app.models import User, Image, RentalPost
+from app.models import User, Image, RentalPost, FindRoomPost
 
 
 class UserSerializer(ModelSerializer):
@@ -51,3 +51,13 @@ class RentalPostSerializer(ModelSerializer):
                     continue
             data['images'] = images
         return data
+
+class FindRoomPostSerializer(ModelSerializer):
+    class Meta:
+        model = FindRoomPost
+        exclude = ['user_id']
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        find_room_post = FindRoomPost.objects.create(user_id=user, **validated_data)
+        return find_room_post
