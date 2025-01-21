@@ -41,7 +41,6 @@ class RentalPostSerializer(ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
 
-        # Lấy danh sách hình ảnh
         if 'images' in data and data['images']:
             images = []
             for image_id in data['images']:

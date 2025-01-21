@@ -98,12 +98,12 @@ class AccountViewSet(viewsets.ViewSet):
         except Exception as e:
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView):
+class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView):
     queryset = Image.objects.filter(is_active=True).all()
     serializer_class = ImageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class RentalViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView):
+class RentalViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView, generics.RetrieveAPIView, generics.DestroyAPIView, generics.UpdateAPIView):
     queryset = RentalPost.objects.all()
     serializer_class = RentalPostSerializer
     permission_classes = [permissions.IsAuthenticated]
