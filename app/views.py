@@ -104,7 +104,7 @@ class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
 class RentalViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView, generics.RetrieveAPIView, generics.DestroyAPIView, generics.UpdateAPIView):
-    queryset = RentalPost.objects.all()
+    queryset = RentalPost.objects.filter(is_active = True).all()
     serializer_class = RentalPostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
