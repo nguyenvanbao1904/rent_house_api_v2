@@ -152,7 +152,7 @@ class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         context['request'] = self.request
         return context
 
-class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView):
+class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
