@@ -89,9 +89,11 @@ class CommentSerializer(ModelSerializer):
         try:
             content_type = ContentType.objects.get(app_label='app',model=validated_data['content_type'])
             validated_data['content_type'] = content_type
+
             instance = content_type.model_class()
             if instance.objects.filter(id=validated_data['object_id']).first() is None:
                 raise ValidationError({"object_id": "Object id must be defined."})
+
             return Comment.objects.create(user_id=user, **validated_data)
         except ContentType.DoesNotExist:
             raise ValidationError({"content_type": "Content type not found."})

@@ -10,6 +10,7 @@ from oauth2_provider.models import Application, AccessToken
 from django.db.models import Q
 
 from app.models import User, Image, RentalPost, FindRoomPost, Comment
+from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission
 from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer, \
     CommentSerializer
 from django.http import JsonResponse
@@ -102,15 +103,14 @@ class AccountViewSet(viewsets.ViewSet):
         except Exception as e:
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView):
+class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView):
     queryset = Image.objects.filter(is_active=True).all()
     serializer_class = ImageSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [ChuNhaTroPermission]
 
 class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = RentalPost.objects.filter(is_active = True).all()
     serializer_class = RentalPostSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         query = self.queryset
@@ -142,15 +142,32 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         context['request'] = self.request
         return context
 
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            permission_classes = [ChuNhaTroPermission]
+        elif self.action in ['destroy']:
+            permission_classes = [AdminPermission]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
 class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = FindRoomPost.objects.filter(is_active = True).all()
     serializer_class = FindRoomPostSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            permission_classes = [NguoiThueTroPermission]
+        elif self.action in ['destroy']:
+            permission_classes = [AdminPermission]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
 class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView):
     queryset = Comment.objects.all()
