@@ -9,8 +9,9 @@ from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 from django.db.models import Q
 
-from app.models import User, Image, RentalPost, FindRoomPost
-from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer
+from app.models import User, Image, RentalPost, FindRoomPost, Comment
+from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer, \
+    CommentSerializer
 from django.http import JsonResponse
 
 
@@ -144,6 +145,16 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
 class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = FindRoomPost.objects.filter(is_active = True).all()
     serializer_class = FindRoomPostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_context(self):

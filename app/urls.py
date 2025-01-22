@@ -9,6 +9,7 @@ router.register('account', views.AccountViewSet, basename='account')
 router.register('image', views.ImageViewSet, basename='image')
 router.register('rental_post', views.RentalViewSet, basename='rental_post')
 router.register('find_room_post', views.FindRoomPostViewSet, basename='find_room_post')
+router.register('comment', views.CommentViewSet, basename='comment')
 urlpatterns = [
     path('', include(router.urls)),
 ]

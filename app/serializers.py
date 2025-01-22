@@ -1,7 +1,10 @@
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
 
-from app.models import User, Image, RentalPost, FindRoomPost
+from app.models import User, Image, RentalPost, FindRoomPost, Comment
 
 
 class UserSerializer(ModelSerializer):
@@ -24,9 +27,10 @@ class ImageSerializer(ModelSerializer):
 
 class RentalPostSerializer(ModelSerializer):
     images = PrimaryKeyRelatedField(many=True, queryset=Image.objects.all())
+    comments = serializers.SerializerMethodField()
     class Meta:
         model = RentalPost
-        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants']
+        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants', 'comments']
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -52,7 +56,13 @@ class RentalPostSerializer(ModelSerializer):
             data['images'] = images
         return data
 
+    def get_comments(self, instance):
+        content_type = ContentType.objects.get_for_model(RentalPost)
+        comments = Comment.objects.filter(content_type=content_type, object_id=instance.id)
+        return CommentSerializer(comments, many=True).data
+
 class FindRoomPostSerializer(ModelSerializer):
+    comments = serializers.SerializerMethodField()
     class Meta:
         model = FindRoomPost
         exclude = ['user_id']
@@ -61,3 +71,33 @@ class FindRoomPostSerializer(ModelSerializer):
         user = self.context["request"].user
         find_room_post = FindRoomPost.objects.create(user_id=user, **validated_data)
         return find_room_post
+
+    def get_comments(self, instance):
+        content_type = ContentType.objects.get_for_model(FindRoomPost)
+        comments = Comment.objects.filter(content_type=content_type, object_id=instance.id)
+        return CommentSerializer(comments, many=True).data
+
+class CommentSerializer(ModelSerializer):
+    content_type = serializers.CharField()
+    user_id = serializers.PrimaryKeyRelatedField(read_only=True)
+    class Meta:
+        model = Comment
+        fields = ['id', 'content', 'created_at', 'content_type', 'object_id', 'image', 'user_id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        try:
+            content_type = ContentType.objects.get(app_label='app',model=validated_data['content_type'])
+            validated_data['content_type'] = content_type
+            instance = content_type.model_class()
+            if instance.objects.filter(id=validated_data['object_id']).first() is None:
+                raise ValidationError({"object_id": "Object id must be defined."})
+            return Comment.objects.create(user_id=user, **validated_data)
+        except ContentType.DoesNotExist:
+            raise ValidationError({"content_type": "Content type not found."})
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data['image']:
+            data['image'] = instance.image.url
+        return data

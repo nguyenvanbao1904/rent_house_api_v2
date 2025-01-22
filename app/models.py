@@ -91,9 +91,9 @@ class RentalPost(Post, Address):
 class Comment(models.Model):
     content = models.TextField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    image_url = CloudinaryField('image', null=False, blank=False)
+    image = CloudinaryField('image', null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
