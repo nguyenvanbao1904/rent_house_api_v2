@@ -150,6 +150,35 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
             permission_classes = [permissions.IsAuthenticated]
         return [permission() for permission in permission_classes]
 
+    @action(methods=['post'], detail=False, url_path='save_post', permission_classes=[NguoiThueTroPermission])
+    def saved_post(self, request):
+        try:
+            post_id = request.data.get('post_id')
+            rental_post = RentalPost.objects.get(id=post_id)
+            request.user.saved_posts.add(rental_post)
+            return Response({"message": "Rental post saved successfully!"}, status=status.HTTP_200_OK)
+        except RentalPost.DoesNotExist:
+            return Response({"error": "Rental post not found!"}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(methods=['post'], detail=False, url_path='delete_saved_post', permission_classes=[NguoiThueTroPermission])
+    def delete_saved_post(self, request):
+        try:
+            post_id = request.data.get('post_id')
+            rental_post = RentalPost.objects.get(id=post_id)
+            request.user.saved_posts.remove(rental_post)
+            return Response({"message": "Rental post removed successfully!"}, status=status.HTTP_200_OK)
+        except RentalPost.DoesNotExist:
+            return Response({"error": "Rental post not found!"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], permission_classes=[NguoiThueTroPermission], url_path='saved_posts')
+    def saved_posts(self, request):
+        saved_posts = request.user.saved_posts.all()
+        serializer = RentalPostSerializer(saved_posts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = FindRoomPost.objects.filter(is_active = True).all()
     serializer_class = FindRoomPostSerializer
