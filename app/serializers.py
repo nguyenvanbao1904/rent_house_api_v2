@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
 
-from app.models import User, Image, RentalPost, FindRoomPost, Comment
+from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, Role
 
 
 class UserSerializer(ModelSerializer):
@@ -28,9 +28,10 @@ class ImageSerializer(ModelSerializer):
 class RentalPostSerializer(ModelSerializer):
     images = PrimaryKeyRelatedField(many=True, queryset=Image.objects.all())
     comments = serializers.SerializerMethodField()
+    user_id = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = RentalPost
-        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants', 'comments']
+        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants', 'comments', 'user_id']
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -103,3 +104,22 @@ class CommentSerializer(ModelSerializer):
         if data['image']:
             data['image'] = instance.image.url
         return data
+
+class FollowSerializer(ModelSerializer):
+    follower = serializers.PrimaryKeyRelatedField(read_only=True)
+    followed = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    class Meta:
+        model = Follow
+        fields = ['id', 'follower', 'followed', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['follower'] = self.context["request"].user
+        if Follow.objects.filter(followed=validated_data['followed'], follower=validated_data['follower']).exists():
+            raise ValidationError({"followed": "Follow already exists."})
+
+        if validated_data['follower'].role != Role.NGUOI_THUE_TRO:
+            raise ValidationError({"detail": "Only (Nguoi_Thue_Tro) can follow (Chu_Nha_Tro)."})
+
+        if validated_data['followed'].role != Role.CHU_NHA_TRO:
+            raise ValidationError({"detail": "You can only follow (Chu_Nha_Tro)."})
+        return super().create(validated_data)

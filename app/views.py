@@ -9,16 +9,17 @@ from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 from django.db.models import Q
 
-from app.models import User, Image, RentalPost, FindRoomPost, Comment
+from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow
 from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission
 from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer, \
-    CommentSerializer
+    CommentSerializer, FollowSerializer
 from django.http import JsonResponse
 
 
-class UserViewSet(viewsets.ViewSet):
+class UserViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'], url_path='current_user', permission_classes=[permissions.IsAuthenticated])
     def current_user(self, request):
@@ -103,7 +104,7 @@ class AccountViewSet(viewsets.ViewSet):
         except Exception as e:
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView):
+class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView, generics.ListAPIView):
     queryset = Image.objects.filter(is_active=True).all()
     serializer_class = ImageSerializer
     permission_classes = [ChuNhaTroPermission]
@@ -178,3 +179,28 @@ class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyA
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
+class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = Follow.objects.all()
+    serializer_class = FollowSerializer
+    permission_classes = [NguoiThueTroPermission]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    @action(detail=False, methods=['post'], url_path='unfollow', permission_classes=[NguoiThueTroPermission])
+    def unfollow(self, request):
+        followed = request.data.get('followed')
+        if followed is None:
+            return JsonResponse({'error': 'followed is required'}, status=400)
+        try:
+            followed_user = User.objects.get(id=followed)
+            follow_instance = Follow.objects.get(follower = request.user, followed = followed_user)
+            follow_instance.delete()
+            return JsonResponse({'message': 'User unfollowed'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Follow.DoesNotExist:
+            return Response({"detail": "You are not following this user."}, status=status.HTTP_400_BAD_REQUEST)
