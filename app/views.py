@@ -1,5 +1,3 @@
-from multiprocessing.connection import address_type
-
 from cloudinary.uploader import upload
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, generics
@@ -215,4 +213,3 @@ class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
     def count_follower(self, request):
         my_followers = request.user.follower_set.count()
         return Response(my_followers, status=status.HTTP_200_OK)
-

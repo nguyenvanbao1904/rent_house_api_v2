@@ -40,6 +40,7 @@ class User(AbstractUser):
     avatar_url = CloudinaryField('image', null=False, blank=False)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.NGUOI_THUE_TRO)
     following = models.ManyToManyField('self', through='Follow', related_name='followers', symmetrical=False )
+    saved_posts = models.ManyToManyField('RentalPost', related_name='saved_by', blank=True)
     objects = UserManager()
 
 
