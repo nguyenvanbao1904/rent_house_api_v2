@@ -204,3 +204,15 @@ class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
             return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         except Follow.DoesNotExist:
             return Response({"detail": "You are not following this user."}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['GET'], url_path='following')
+    def following(self, request):
+        following_users = request.user.following.all()
+        serializer = UserSerializer(following_users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['GET'], url_path='count_follower', permission_classes=[ChuNhaTroPermission])
+    def count_follower(self, request):
+        my_followers = request.user.follower_set.count()
+        return Response(my_followers, status=status.HTTP_200_OK)
+
