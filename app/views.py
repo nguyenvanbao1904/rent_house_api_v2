@@ -12,7 +12,8 @@ from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPe
 from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer, \
     CommentSerializer, FollowSerializer
 from django.http import JsonResponse
-
+from django.core.mail import send_mail
+from RentHouseApi import settings
 
 class UserViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     queryset = User.objects.all()
@@ -216,6 +217,25 @@ class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
+    def perform_create(self, serializer):
+        follow = serializer.save()
+
+        # Gửi email thông báo sau khi tạo thành công
+        followed_user = follow.followed
+        follower_user = follow.follower
+
+        subject = "Bạn có một người theo dõi mới!"
+        message = f"Người dùng {follower_user.email} đã bắt đầu theo dõi bạn trên hệ thống RentHouse."
+        recipient_list = [followed_user.email]
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            recipient_list,
+            fail_silently=False,
+        )
 
     @action(detail=False, methods=['post'], url_path='unfollow', permission_classes=[NguoiThueTroPermission])
     def unfollow(self, request):

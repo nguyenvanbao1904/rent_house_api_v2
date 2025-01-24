@@ -206,3 +206,12 @@ REST_FRAMEWORK = {
 
 # CLIENT_ID = uxcqnSM8xosdWQZ5OHYGccRy7OsUncKDHvAoUuXD
 # CLIENT_SECRET = qUa62PnBlhoCpfeJTzQhqyG1X7iFkIabCB1e2byl5jVpMin843WXEmDbchJMbAdJv3opdviatmaM57Ue3bAWqhbTb9lbnTq75p1Hlp79rojX55PTiC4Nf8VVxUMj9S5h
+
+# email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'bao19042004@gmail.com'
+EMAIL_HOST_PASSWORD = 'qdnzlckiyvvrsvfl'
+DEFAULT_FROM_EMAIL = 'bao19042004@gmail.com'
