@@ -7,7 +7,7 @@ from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 from django.db.models import Q
 
-from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow
+from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus
 from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission
 from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer, \
     CommentSerializer, FollowSerializer
@@ -179,6 +179,21 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         serializer = RentalPostSerializer(saved_posts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['patch'], permission_classes=[AdminPermission], url_path='change_post_status')
+    def change_post_status(self, request):
+        try:
+            post_id = request.data.get('post_id')
+            rental_post = RentalPost.objects.get(id=post_id)
+            rental_post_status = request.data.get('status')
+            if rental_post_status not in RentalPostStatus.values:
+                raise ValueError("Invalid status. Must be one of: Pending, Allow, Deny.")
+            rental_post.status = rental_post_status
+            rental_post.save()
+            return Response({"message": "Rental post approved successfully!"}, status=status.HTTP_200_OK)
+        except RentalPost.DoesNotExist:
+            return Response({"error": "Rental post not found!"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = FindRoomPost.objects.filter(is_active = True).all()
@@ -221,7 +236,6 @@ class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
     def perform_create(self, serializer):
         follow = serializer.save()
 
-        # Gửi email thông báo sau khi tạo thành công
         followed_user = follow.followed
         follower_user = follow.follower
 

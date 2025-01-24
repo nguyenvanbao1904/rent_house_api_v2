@@ -31,7 +31,7 @@ class RentalPostSerializer(ModelSerializer):
     user_id = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = RentalPost
-        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants', 'comments', 'user_id']
+        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants', 'comments', 'user_id', 'status']
 
     def create(self, validated_data):
         user = self.context["request"].user
