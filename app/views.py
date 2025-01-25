@@ -1,9 +1,8 @@
-from pickle import FALSE
-
 from cloudinary.uploader import upload
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
@@ -119,12 +118,24 @@ class AccountViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return JsonResponse({'error': str(e)}, status=400)
 
-            user = User.objects.create(
+            user = User(
                 email=request.data.get('email'),
                 first_name=request.data.get('first_name'),
                 last_name=request.data.get('last_name'),
                 avatar_url=avatar_url,
             )
+
+            if request.data.get('role'):
+                if request.data.get('role') in Role.values:
+                    if request.data.get('role') != Role.ADMIN:
+                        user.role = request.data.get('role')
+                    else:
+                        if request.user and request.user.is_authenticated and request.user.role == Role.ADMIN:
+                            user.role = request.data.get('role')
+                        else:
+                            return Response({'error': 'only admin can create admin account'}, status=401)
+                else:
+                    return Response({'error': 'Invalid role'}, status=400)
 
             user.set_password(request.data.get('password'))
             user.save()
