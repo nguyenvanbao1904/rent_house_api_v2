@@ -1,3 +1,5 @@
+from pickle import FALSE
+
 from cloudinary.uploader import upload
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, generics
@@ -7,7 +9,7 @@ from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 from django.db.models import Q
 
-from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus
+from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus, Role
 from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission
 from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer, \
     CommentSerializer, FollowSerializer
@@ -15,10 +17,9 @@ from django.http import JsonResponse
 from django.core.mail import send_mail
 from RentHouseApi import settings
 
-class UserViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
+class UserViewSet(viewsets.ViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'], url_path='current_user', permission_classes=[permissions.IsAuthenticated])
     def current_user(self, request):
@@ -26,6 +27,46 @@ class UserViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
         serializer = UserSerializer(user)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'], url_path='count_user', permission_classes=[AdminPermission])
+    def count_user(self, request):
+        month = request.GET.get('month')
+        quarter = request.GET.get('quarter')
+        year = request.GET.get('year')
+        nguoi_thue_tro_query = User.objects.filter(role=Role.NGUOI_THUE_TRO)
+        chu_nha_tro_query = User.objects.filter(role=Role.CHU_NHA_TRO)
+
+        if month:
+            nguoi_thue_tro_query = nguoi_thue_tro_query.filter(last_login__month=month)
+            chu_nha_tro_query = chu_nha_tro_query.filter(last_login__month=month)
+
+        if quarter:
+            quarter = int(quarter)
+            if quarter == 1:
+                month_range = [1, 2, 3]
+            elif quarter == 2:
+                month_range = [4, 5, 6]
+            elif quarter == 3:
+                month_range = [7, 8, 9]
+            elif quarter == 4:
+                month_range = [10, 11, 12]
+            else:
+                return Response({"error": "Invalid quarter"}, status=400)
+
+            nguoi_thue_tro_query = nguoi_thue_tro_query.filter(last_login__month__in=month_range)
+            chu_nha_tro_query = chu_nha_tro_query.filter(last_login__month__in=month_range)
+
+        if year:
+            nguoi_thue_tro_query = nguoi_thue_tro_query.filter(last_login__year=year)
+            chu_nha_tro_query = chu_nha_tro_query.filter(last_login__year=year)
+
+        nguoi_thue_tro_count = nguoi_thue_tro_query.count()
+        chu_nha_tro_count = chu_nha_tro_query.count()
+
+        return Response({
+            'nguoi_thue_tro': nguoi_thue_tro_count,
+            'chu_nha_tro': chu_nha_tro_count,
+            'total_user': nguoi_thue_tro_count + chu_nha_tro_count
+        })
 
 class AccountViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path='login/callback', permission_classes=[permissions.IsAuthenticated])
@@ -114,13 +155,15 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
 
     def get_queryset(self):
         query = self.queryset
-        city = self.request.query_params.get('city', None)
-        district = self.request.query_params.get('district', None)
-        ward = self.request.query_params.get('ward', None)
-        min_price = self.request.query_params.get('min_price', None)
-        max_price = self.request.query_params.get('max_price', None)
-        occupants = self.request.query_params.get('occupants', None)
-        address = self.request.query_params.get('address', None)
+        city = self.request.GET.get('city')
+        district = self.request.GET.get('district')
+        ward = self.request.GET.get('ward')
+        min_price = self.request.GET.get('min_price')
+        max_price = self.request.GET.get('max_price')
+        occupants = self.request.GET.get('occupants')
+        address = self.request.GET.get('address')
+        if self.request.user.is_authenticated and self.request.user.role == Role.CHU_NHA_TRO:
+            query = query.filter(user_id = self.request.user.id)
         if city:
             query = query.filter(city=city)
         if district:
@@ -143,15 +186,21 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         return context
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            permission_classes = [ChuNhaTroPermission]
-        elif self.action in ['destroy']:
-            permission_classes = [AdminPermission]
-        else:
-            permission_classes = [permissions.IsAuthenticated]
+        action_permissions = {
+            'create': [ChuNhaTroPermission],
+            'update': [ChuNhaTroPermission],
+            'partial_update': [ChuNhaTroPermission],
+            'destroy': [ChuNhaTroPermission],
+            'saved_post': [NguoiThueTroPermission],
+            'delete_saved_post': [NguoiThueTroPermission],
+            'saved_posts': [NguoiThueTroPermission],
+            'change_post_status': [AdminPermission],
+        }
+
+        permission_classes = action_permissions.get(self.action, [permissions.IsAuthenticated])
         return [permission() for permission in permission_classes]
 
-    @action(methods=['post'], detail=False, url_path='save_post', permission_classes=[NguoiThueTroPermission])
+    @action(methods=['post'], detail=False, url_path='save_post')
     def saved_post(self, request):
         try:
             post_id = request.data.get('post_id')
@@ -161,11 +210,10 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         except RentalPost.DoesNotExist:
             return Response({"error": "Rental post not found!"}, status=status.HTTP_404_NOT_FOUND)
 
-    @action(methods=['post'], detail=False, url_path='delete_saved_post', permission_classes=[NguoiThueTroPermission])
-    def delete_saved_post(self, request):
+    @action(methods=['delete'], detail=True, url_path='delete_saved_post')
+    def delete_saved_post(self, request, pk=None):
         try:
-            post_id = request.data.get('post_id')
-            rental_post = RentalPost.objects.get(id=post_id)
+            rental_post = RentalPost.objects.get(id=pk)
             request.user.saved_posts.remove(rental_post)
             return Response({"message": "Rental post removed successfully!"}, status=status.HTTP_200_OK)
         except RentalPost.DoesNotExist:
@@ -173,13 +221,13 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=False, methods=['get'], permission_classes=[NguoiThueTroPermission], url_path='saved_posts')
+    @action(detail=False, methods=['get'], url_path='saved_posts')
     def saved_posts(self, request):
         saved_posts = request.user.saved_posts.all()
         serializer = RentalPostSerializer(saved_posts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['patch'], permission_classes=[AdminPermission], url_path='change_post_status')
+    @action(detail=False, methods=['patch'], url_path='change_post_status')
     def change_post_status(self, request):
         try:
             post_id = request.data.get('post_id')
@@ -276,3 +324,31 @@ class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
     def count_follower(self, request):
         my_followers = request.user.follower_set.count()
         return Response(my_followers, status=status.HTTP_200_OK)
+
+
+import json
+from oauth2_provider.views import TokenView
+from django.contrib.auth.models import update_last_login
+from oauth2_provider.models import AccessToken
+
+class CustomTokenView(TokenView):
+    def post(self, request, *args, **kwargs):
+        # Gọi phương thức `post` gốc của TokenView
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            # Parse nội dung JSON từ `response.content`
+            token_data = json.loads(response.content)
+            access_token = token_data.get('access_token')
+
+            if access_token:
+                try:
+                    # Lấy AccessToken và cập nhật `last_login`
+                    token = AccessToken.objects.get(token=access_token)
+                    user = token.user
+                    if user:
+                        update_last_login(None, user)
+                except AccessToken.DoesNotExist:
+                    pass
+
+        return response
