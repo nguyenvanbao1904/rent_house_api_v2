@@ -13,6 +13,12 @@ class UserSerializer(ModelSerializer):
         fields = "__all__"
         extra_kwargs = {'password': {'write_only': True}}
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data['avatar_url']:
+            data['avatar_url'] = instance.avatar_url.url
+        return data
+
 
 class ImageSerializer(ModelSerializer):
     class Meta:
@@ -31,7 +37,7 @@ class RentalPostSerializer(ModelSerializer):
     user_id = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = RentalPost
-        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants', 'comments', 'user_id', 'status']
+        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants', 'comments', 'updated_at', 'status','user_id']
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -40,12 +46,10 @@ class RentalPostSerializer(ModelSerializer):
         if len(images) < 3:
             raise ValidationError({"images": "Minimum 3 images required."})
         rental_post.images.set(images)
-        print(rental_post)
         return rental_post
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-
         if 'images' in data and data['images']:
             images = []
             for image_id in data['images']:
@@ -55,6 +59,14 @@ class RentalPostSerializer(ModelSerializer):
                 except Image.DoesNotExist:
                     continue
             data['images'] = images
+
+        owner = UserSerializer(User.objects.get(id=data['user_id'])).data
+        owner_data = {}
+        owner_data['last_name'] = owner.get('last_name')
+        owner_data['first_name'] = owner.get('first_name')
+        owner_data['avatar_url'] = owner.get('avatar_url')
+
+        data['user'] = owner_data
         return data
 
     def get_comments(self, instance):
