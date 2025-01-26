@@ -6,7 +6,6 @@ from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
 
 from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, Role
 
-
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
@@ -19,6 +18,10 @@ class UserSerializer(ModelSerializer):
             data['avatar_url'] = instance.avatar_url.url
         return data
 
+class CustomUserSerializer(UserSerializer):
+    class Meta:
+        model = User
+        fields = ['last_name', 'first_name', 'avatar_url']
 
 class ImageSerializer(ModelSerializer):
     class Meta:
@@ -60,13 +63,7 @@ class RentalPostSerializer(ModelSerializer):
                     continue
             data['images'] = images
 
-        owner = UserSerializer(User.objects.get(id=data['user_id'])).data
-        owner_data = {}
-        owner_data['last_name'] = owner.get('last_name')
-        owner_data['first_name'] = owner.get('first_name')
-        owner_data['avatar_url'] = owner.get('avatar_url')
-
-        data['user'] = owner_data
+        data['user'] = CustomUserSerializer(User.objects.get(id=data['user_id'])).data
         return data
 
     def get_comments(self, instance):
@@ -76,9 +73,10 @@ class RentalPostSerializer(ModelSerializer):
 
 class FindRoomPostSerializer(ModelSerializer):
     comments = serializers.SerializerMethodField()
+    user_id = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = FindRoomPost
-        exclude = ['user_id']
+        fields = '__all__'
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -89,6 +87,11 @@ class FindRoomPostSerializer(ModelSerializer):
         content_type = ContentType.objects.get_for_model(FindRoomPost)
         comments = Comment.objects.filter(content_type=content_type, object_id=instance.id)
         return CommentSerializer(comments, many=True).data
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['user'] = CustomUserSerializer(User.objects.get(id=data['user_id'])).data
+        return data
 
 class CommentSerializer(ModelSerializer):
     content_type = serializers.CharField()
@@ -115,6 +118,8 @@ class CommentSerializer(ModelSerializer):
         data = super().to_representation(instance)
         if data['image']:
             data['image'] = instance.image.url
+
+        data['user'] = CustomUserSerializer(User.objects.get(id=data['user_id'])).data
         return data
 
 class FollowSerializer(ModelSerializer):
