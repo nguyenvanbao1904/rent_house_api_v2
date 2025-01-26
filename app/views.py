@@ -2,13 +2,13 @@ from cloudinary.uploader import upload
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
 from django.db.models import Q
 
 from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus, Role
+from app.paginators import ItemPagination
 from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission
 from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer, \
     CommentSerializer, FollowSerializer
@@ -163,6 +163,7 @@ class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPI
 class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = RentalPost.objects.filter(is_active = True).all()
     serializer_class = RentalPostSerializer
+    pagination_class = ItemPagination
 
     def get_queryset(self):
         query = self.queryset
@@ -257,6 +258,7 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
 class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = FindRoomPost.objects.filter(is_active = True).all()
     serializer_class = FindRoomPostSerializer
+    pagination_class = ItemPagination
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -276,6 +278,7 @@ class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyA
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = ItemPagination
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
