@@ -174,8 +174,11 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         max_price = self.request.GET.get('max_price')
         occupants = self.request.GET.get('occupants')
         address = self.request.GET.get('address')
+        status = self.request.GET.get('status')
         if self.request.user.is_authenticated and self.request.user.role == Role.CHU_NHA_TRO:
             query = query.filter(user_id = self.request.user.id)
+        if status:
+            query = query.filter(status = status)
         if city:
             query = query.filter(city=city)
         if district:
