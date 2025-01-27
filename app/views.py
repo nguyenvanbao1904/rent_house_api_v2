@@ -266,12 +266,14 @@ class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         return context
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            permission_classes = [NguoiThueTroPermission]
-        elif self.action in ['destroy']:
-            permission_classes = [AdminPermission]
-        else:
-            permission_classes = [permissions.IsAuthenticated]
+        action_permissions = {
+            'create': [NguoiThueTroPermission],
+            'update': [NguoiThueTroPermission],
+            'partial_update': [NguoiThueTroPermission],
+            'destroy': [NguoiThueTroPermission],
+        }
+
+        permission_classes = action_permissions.get(self.action, [permissions.IsAuthenticated])
         return [permission() for permission in permission_classes]
 
 class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView):
