@@ -34,42 +34,62 @@ class ImageSerializer(ModelSerializer):
             data['image_url'] = instance.image_url.url
         return data
 
+
 class RentalPostSerializer(ModelSerializer):
-    images = PrimaryKeyRelatedField(many=True, queryset=Image.objects.all())
+    images = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True
+    )
     comments = serializers.SerializerMethodField()
     user_id = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = RentalPost
-        fields = ['id', 'city', 'district', 'ward', 'detail_address', 'price', 'area', 'title', 'content', 'images', 'max_occupants', 'comments', 'updated_at', 'status','user_id']
+        fields = [
+            'id', 'city', 'district', 'ward', 'detail_address', 'price', 'area',
+            'title', 'content', 'max_occupants', 'comments', 'updated_at',
+            'status', 'user_id', 'images'
+        ]
+
+    def validate_images(self, value):
+        """
+        Kiểm tra xem có ít nhất 3 ảnh không
+        """
+        if len(value) < 3:
+            raise ValidationError("Bạn phải tải lên ít nhất 3 ảnh.")
+        return value
 
     def create(self, validated_data):
         user = self.context["request"].user
-        images = validated_data.pop('images', [])
+        images_data = validated_data.pop('images', [])
         rental_post = RentalPost.objects.create(user_id=user, **validated_data)
-        if len(images) < 3:
-            raise ValidationError({"images": "Minimum 3 images required."})
-        rental_post.images.set(images)
+        for image_data in images_data:
+            # Tạo đối tượng Image và lưu ảnh
+            image = Image.objects.create(image_url=image_data)  # Truyền trực tiếp image_data vào trường image
+            rental_post.images.add(image)  # Thêm hình ảnh vào rental_post
+
         return rental_post
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if 'images' in data and data['images']:
-            images = []
-            for image_id in data['images']:
-                try:
-                    image = Image.objects.get(id=image_id)
-                    images.append(image.image_url.url)
-                except Image.DoesNotExist:
-                    continue
-            data['images'] = images
+        print(data)
 
-        data['user'] = CustomUserSerializer(User.objects.get(id=data['user_id'])).data
+        # Kiểm tra nếu có hình ảnh và lấy chúng từ `instance.images.all()`
+        if hasattr(instance, 'images') and instance.images.exists():
+            data['images'] = [
+                image.image_url.url for image in instance.images.all()
+            ]
+        else:
+            data['images'] = []
+
+        data['user'] = CustomUserSerializer(instance.user_id).data
         return data
 
     def get_comments(self, instance):
         content_type = ContentType.objects.get_for_model(RentalPost)
         comments = Comment.objects.filter(content_type=content_type, object_id=instance.id)
         return CommentSerializer(comments, many=True).data
+
 
 class FindRoomPostSerializer(ModelSerializer):
     comments = serializers.SerializerMethodField()
