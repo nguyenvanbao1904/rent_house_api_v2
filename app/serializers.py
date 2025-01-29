@@ -1,5 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import ManyToManyField
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
@@ -23,18 +24,6 @@ class CustomUserSerializer(UserSerializer):
         model = User
         fields = ['last_name', 'first_name', 'avatar_url']
 
-class ImageSerializer(ModelSerializer):
-    class Meta:
-        model = Image
-        fields = "__all__"
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if data['image_url']:
-            data['image_url'] = instance.image_url.url
-        return data
-
-
 class RentalPostSerializer(ModelSerializer):
     images = serializers.ListField(
         child=serializers.ImageField(),
@@ -52,9 +41,6 @@ class RentalPostSerializer(ModelSerializer):
         ]
 
     def validate_images(self, value):
-        """
-        Kiểm tra xem có ít nhất 3 ảnh không
-        """
         if len(value) < 3:
             raise ValidationError("Bạn phải tải lên ít nhất 3 ảnh.")
         return value
@@ -64,24 +50,18 @@ class RentalPostSerializer(ModelSerializer):
         images_data = validated_data.pop('images', [])
         rental_post = RentalPost.objects.create(user_id=user, **validated_data)
         for image_data in images_data:
-            # Tạo đối tượng Image và lưu ảnh
-            image = Image.objects.create(image_url=image_data)  # Truyền trực tiếp image_data vào trường image
-            rental_post.images.add(image)  # Thêm hình ảnh vào rental_post
-
+            image = Image.objects.create(image_url=image_data)
+            rental_post.images.add(image)
         return rental_post
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        print(data)
-
-        # Kiểm tra nếu có hình ảnh và lấy chúng từ `instance.images.all()`
         if hasattr(instance, 'images') and instance.images.exists():
             data['images'] = [
                 image.image_url.url for image in instance.images.all()
             ]
         else:
             data['images'] = []
-
         data['user'] = CustomUserSerializer(instance.user_id).data
         return data
 

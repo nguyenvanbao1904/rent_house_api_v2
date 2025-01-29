@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
+import debug_toolbar
 
 # Swagger config
 from rest_framework import permissions
@@ -36,5 +37,5 @@ urlpatterns = [
     path('o/token/', CustomTokenView.as_view(), name='token'),
     path('o/', include('oauth2_provider.urls',
                        namespace='oauth2_provider')),
-
+    path('__debug__/', include(debug_toolbar.urls))
 ]

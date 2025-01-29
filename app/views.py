@@ -10,7 +10,7 @@ from django.db.models import Q
 from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus, Role
 from app.paginators import ItemPagination
 from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission
-from app.serializers import UserSerializer, ImageSerializer, RentalPostSerializer, FindRoomPostSerializer, \
+from app.serializers import UserSerializer, RentalPostSerializer, FindRoomPostSerializer, \
     CommentSerializer, FollowSerializer
 from django.http import JsonResponse
 from django.core.mail import send_mail
@@ -155,11 +155,6 @@ class AccountViewSet(viewsets.ViewSet):
         except Exception as e:
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ImageViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView, generics.ListAPIView):
-    queryset = Image.objects.filter(is_active=True).all()
-    serializer_class = ImageSerializer
-    permission_classes = [ChuNhaTroPermission]
-
 class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
     queryset = RentalPost.objects.filter(is_active = True).all()
     serializer_class = RentalPostSerializer
@@ -193,7 +188,7 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
             query = query.filter(Q(max_occupants=occupants) | Q(max_occupants__isnull=True))
         if address:
             query = query.filter(detail_address__icontains=address)
-        return query
+        return query.order_by('-created_at')
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -259,7 +254,7 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
-    queryset = FindRoomPost.objects.filter(is_active = True).all()
+    queryset = FindRoomPost.objects.filter(is_active = True).all().order_by('-created_at')
     serializer_class = FindRoomPostSerializer
     pagination_class = ItemPagination
 
