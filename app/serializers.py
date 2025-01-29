@@ -56,18 +56,15 @@ class RentalPostSerializer(ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if hasattr(instance, 'images') and instance.images.exists():
-            data['images'] = [
-                image.image_url.url for image in instance.images.all()
-            ]
+        if hasattr(instance, 'user_id'):
+            data['user'] = CustomUserSerializer(instance.user_id).data
         else:
-            data['images'] = []
-        data['user'] = CustomUserSerializer(instance.user_id).data
+            data['user'] = {}
+        data['images'] = [image.image_url.url for image in instance.images.all()] if instance.images.exists() else []
         return data
 
-    def get_comments(self, instance):
-        content_type = ContentType.objects.get_for_model(RentalPost)
-        comments = Comment.objects.filter(content_type=content_type, object_id=instance.id)
+    def get_comments(self, obj):
+        comments = getattr(obj, 'prefetched_comments', [])
         return CommentSerializer(comments, many=True).data
 
 
@@ -116,10 +113,14 @@ class CommentSerializer(ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+
         if data['image']:
             data['image'] = instance.image.url
 
-        data['user'] = CustomUserSerializer(User.objects.get(id=data['user_id'])).data
+        if hasattr(instance, 'user_id'):
+            data['user'] = CustomUserSerializer(instance.user_id).data
+        else:
+            data['user'] = {}
         return data
 
 class FollowSerializer(ModelSerializer):

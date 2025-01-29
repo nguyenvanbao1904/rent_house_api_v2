@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from cloudinary.models import CloudinaryField
 from django.db.models.fields import CharField
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 
 
@@ -81,6 +81,7 @@ class Image(models.Model):
 
 class FindRoomPost(Post, Address):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='find_room_post')
+    comments_gfk = GenericRelation('Comment', related_query_name='find_room_post')
 
 class RentalPost(Post, Address):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rental_post')
@@ -88,6 +89,7 @@ class RentalPost(Post, Address):
     max_occupants = models.IntegerField(null=True)
     status = models.CharField(max_length=20, choices=RentalPostStatus.choices, default=RentalPostStatus.PENDING)
     images = models.ManyToManyField(Image, related_name='rental_post')
+    comments_gfk = GenericRelation('Comment', related_query_name='rental_post')
 
 class Comment(models.Model):
     content = models.TextField(null=False, blank=False)

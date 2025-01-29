@@ -1,11 +1,12 @@
 from cloudinary.uploader import upload
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from oauthlib.common import generate_token
 from oauth2_provider.models import Application, AccessToken
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 
 from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus, Role
 from app.paginators import ItemPagination
@@ -156,7 +157,7 @@ class AccountViewSet(viewsets.ViewSet):
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
-    queryset = RentalPost.objects.filter(is_active = True).all()
+    queryset = RentalPost.objects.filter(is_active = True).prefetch_related('images').select_related('user_id')
     serializer_class = RentalPostSerializer
     pagination_class = ItemPagination
 
@@ -188,6 +189,14 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
             query = query.filter(Q(max_occupants=occupants) | Q(max_occupants__isnull=True))
         if address:
             query = query.filter(detail_address__icontains=address)
+
+        # **Prefetch comments với GFK**
+        rental_post_type = ContentType.objects.get_for_model(RentalPost)
+        comments_query = Comment.objects.filter(content_type=rental_post_type).select_related('user_id')
+
+        query = query.prefetch_related(
+            Prefetch('comments_gfk', queryset=comments_query, to_attr='prefetched_comments')
+        )
         return query.order_by('-created_at')
 
     def get_serializer_context(self):
