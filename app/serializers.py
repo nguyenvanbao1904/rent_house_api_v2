@@ -1,9 +1,8 @@
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import ManyToManyField
+from django.template.defaulttags import comment
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
+from rest_framework.serializers import ModelSerializer
 
 from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, Role
 
@@ -81,13 +80,12 @@ class FindRoomPostSerializer(ModelSerializer):
         return find_room_post
 
     def get_comments(self, instance):
-        content_type = ContentType.objects.get_for_model(FindRoomPost)
-        comments = Comment.objects.filter(content_type=content_type, object_id=instance.id)
+        comments = getattr(instance, 'prefetched_comments', [])
         return CommentSerializer(comments, many=True).data
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['user'] = CustomUserSerializer(User.objects.get(id=data['user_id'])).data
+        data['user'] = CustomUserSerializer(instance.user_id).data
         return data
 
 class CommentSerializer(ModelSerializer):
