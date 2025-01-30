@@ -174,7 +174,10 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         if self.request.user.is_authenticated and self.request.user.role == Role.CHU_NHA_TRO:
             query = query.filter(user_id = self.request.user.id)
         if status:
-            query = query.filter(status = status)
+            if self.request.user.is_authenticated and (self.request.user.role == Role.CHU_NHA_TRO or self.request.user.role == Role.ADMIN) :
+                query = query.filter(status = status)
+            else:
+                query = query.filter(status=RentalPostStatus.ALLOW)
         if status is None:
             query = query.filter(status = RentalPostStatus.ALLOW)
         if city:
