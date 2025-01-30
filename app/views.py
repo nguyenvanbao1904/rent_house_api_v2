@@ -157,7 +157,7 @@ class AccountViewSet(viewsets.ViewSet):
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
-    queryset = RentalPost.objects.filter(is_active = True).prefetch_related('images').select_related('user_id')
+    queryset = RentalPost.objects.filter(Q(is_active = True) & Q(status = RentalPostStatus.ALLOW)).prefetch_related('images').select_related('user_id')
     serializer_class = RentalPostSerializer
     pagination_class = ItemPagination
 
@@ -278,10 +278,12 @@ class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
             'update': [NguoiThueTroPermission],
             'partial_update': [NguoiThueTroPermission],
             'destroy': [NguoiThueTroPermission],
+            'my_find_room_posts': [NguoiThueTroPermission]
         }
 
         permission_classes = action_permissions.get(self.action, [permissions.IsAuthenticated])
         return [permission() for permission in permission_classes]
+
     def get_queryset(self):
         query = self.queryset
         find_room_post = ContentType.objects.get_for_model(FindRoomPost)
@@ -290,6 +292,11 @@ class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
             Prefetch('comments_gfk', queryset=comments_query, to_attr='prefetched_comments')
         )
         return query
+
+    @action(detail=False, methods=['get'], url_path='my_find_room_posts')
+    def my_find_room_posts(self, request):
+        post = FindRoomPost.objects.get(user_id = request.user)
+        return Response(FindRoomPostSerializer(post).data, status=status.HTTP_200_OK)
 class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
