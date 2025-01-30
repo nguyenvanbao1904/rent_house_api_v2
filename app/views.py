@@ -360,7 +360,7 @@ class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
     @action(detail=False, methods=['GET'], url_path='count_follower', permission_classes=[ChuNhaTroPermission])
     def count_follower(self, request):
         my_followers = request.user.follower_set.count()
-        return Response(my_followers, status=status.HTTP_200_OK)
+        return Response({'total_follower': my_followers}, status=status.HTTP_200_OK)
 
 
 import json
