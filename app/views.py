@@ -5,7 +5,7 @@ from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from oauthlib.common import generate_token
-from oauth2_provider.models import Application, AccessToken
+from oauth2_provider.models import Application
 from django.db.models import Q, Prefetch
 
 from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus, Role
@@ -157,7 +157,7 @@ class AccountViewSet(viewsets.ViewSet):
             return JsonResponse({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
-    queryset = RentalPost.objects.filter(Q(is_active = True) & Q(status = RentalPostStatus.ALLOW)).prefetch_related('images').select_related('user_id')
+    queryset = RentalPost.objects.filter(is_active = True).prefetch_related('images').select_related('user_id')
     serializer_class = RentalPostSerializer
     pagination_class = ItemPagination
 
@@ -175,6 +175,8 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
             query = query.filter(user_id = self.request.user.id)
         if status:
             query = query.filter(status = status)
+        if status is None:
+            query = query.filter(status = RentalPostStatus.ALLOW)
         if city:
             query = query.filter(city=city)
         if district:
@@ -387,5 +389,4 @@ class CustomTokenView(TokenView):
                         update_last_login(None, user)
                 except AccessToken.DoesNotExist:
                     pass
-
         return response
