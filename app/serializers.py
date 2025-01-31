@@ -111,7 +111,7 @@ class CommentSerializer(ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-
+        data.pop('content_type')
         if data['image']:
             data['image'] = instance.image.url
 
