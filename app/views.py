@@ -10,7 +10,7 @@ from django.db.models import Q, Prefetch
 
 from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus, Role
 from app.paginators import ItemPagination
-from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission
+from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission, IsOwner
 from app.serializers import UserSerializer, RentalPostSerializer, FindRoomPostSerializer, \
     CommentSerializer, FollowSerializer
 from django.http import JsonResponse
@@ -312,6 +312,11 @@ class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyA
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
+    def get_permissions(self):
+        if self.action == 'destroy':
+            return [IsOwner()]
+        return super().get_permissions()
 
 class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
     queryset = Follow.objects.all()
