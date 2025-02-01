@@ -21,7 +21,7 @@ class UserSerializer(ModelSerializer):
 class CustomUserSerializer(UserSerializer):
     class Meta:
         model = User
-        fields = ['last_name', 'first_name', 'avatar_url', 'role']
+        fields = ['id','last_name', 'first_name', 'avatar_url', 'role']
 
 class RentalPostSerializer(ModelSerializer):
     images = serializers.ListField(
