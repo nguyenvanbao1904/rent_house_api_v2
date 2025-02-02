@@ -26,7 +26,7 @@ ALLOWED_HOSTS = [
 INTERNAL_IPS = [
     "127.0.0.1",
     "localhost",
-    "10.0.2.2",  # Nếu bạn chạy trên Android Emulator
+    "10.0.2.2",
 ]
 
 # Application definition

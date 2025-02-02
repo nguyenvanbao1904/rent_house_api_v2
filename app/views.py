@@ -8,7 +8,7 @@ from oauthlib.common import generate_token
 from oauth2_provider.models import Application
 from django.db.models import Q, Prefetch
 
-from app.models import User, Image, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus, Role
+from app.models import User, RentalPost, FindRoomPost, Comment, Follow, RentalPostStatus, Role
 from app.paginators import ItemPagination
 from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPermission, IsOwner
 from app.serializers import UserSerializer, RentalPostSerializer, FindRoomPostSerializer, \
@@ -300,8 +300,8 @@ class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='my_find_room_posts')
     def my_find_room_posts(self, request):
-        post = FindRoomPost.objects.get(user_id = request.user)
-        return Response(FindRoomPostSerializer(post).data, status=status.HTTP_200_OK)
+        post = FindRoomPost.objects.filter(user_id = request.user)
+        return Response(FindRoomPostSerializer(post, many=True).data, status=status.HTTP_200_OK)
 class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
