@@ -1,5 +1,4 @@
 from django.contrib.contenttypes.models import ContentType
-from django.template.defaulttags import comment
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
@@ -52,6 +51,7 @@ class RentalPostSerializer(ModelSerializer):
             image = Image.objects.create(image_url=image_data)
             rental_post.images.add(image)
         return rental_post
+
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

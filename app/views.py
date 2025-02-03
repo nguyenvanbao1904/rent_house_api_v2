@@ -14,8 +14,9 @@ from app.permissions import AdminPermission, ChuNhaTroPermission, NguoiThueTroPe
 from app.serializers import UserSerializer, RentalPostSerializer, FindRoomPostSerializer, \
     CommentSerializer, FollowSerializer
 from django.http import JsonResponse
-from django.core.mail import send_mail
-from RentHouseApi import settings
+
+from app.ultis import send_mails
+
 
 class UserViewSet(viewsets.ViewSet):
     queryset = User.objects.all()
@@ -261,6 +262,15 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
                 raise ValueError("Invalid status. Must be one of: Pending, Allow, Deny.")
             rental_post.status = rental_post_status
             rental_post.save()
+            if rental_post.status == RentalPostStatus.ALLOW:
+                follower = rental_post.user_id.follower_set.all()
+                follower_users = [follow.follower for follow in follower]
+
+                subject = f"{rental_post.user_id.first_name} {rental_post.user_id.last_name} vừa có 1 bài đăng mới."
+                message = f"Người dùng {rental_post.user_id.first_name} {rental_post.user_id.last_name} mà bạn theo dõi vừa đăng bài mới trên hệ thống RentHouse."
+                recipient_list = follower_users
+
+                send_mails(subject, message, recipient_list)
             return Response({"message": "Rental post approved successfully!"}, status=status.HTTP_200_OK)
         except RentalPost.DoesNotExist:
             return Response({"error": "Rental post not found!"}, status=status.HTTP_404_NOT_FOUND)
@@ -300,8 +310,8 @@ class FindRoomPostViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='my_find_room_posts')
     def my_find_room_posts(self, request):
-        post = FindRoomPost.objects.filter(user_id = request.user)
-        return Response(FindRoomPostSerializer(post, many=True).data, status=status.HTTP_200_OK)
+        query = self.get_queryset().filter(user_id = request.user)
+        return Response(FindRoomPostSerializer(query, many=True).data, status=status.HTTP_200_OK)
 class CommentViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.DestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
@@ -338,13 +348,7 @@ class FollowViewSet(viewsets.ViewSet, generics.CreateAPIView):
         message = f"Người dùng {follower_user.email} đã bắt đầu theo dõi bạn trên hệ thống RentHouse."
         recipient_list = [followed_user.email]
 
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            recipient_list,
-            fail_silently=False,
-        )
+        send_mails(subject, message, recipient_list)
 
     @action(detail=False, methods=['post'], url_path='unfollow', permission_classes=[NguoiThueTroPermission])
     def unfollow(self, request):
