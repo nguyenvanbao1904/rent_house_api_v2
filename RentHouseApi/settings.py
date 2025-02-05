@@ -162,11 +162,7 @@ AUTH_USER_MODEL = 'app.User'
 MEDIA_ROOT = '%s/app/static/' % BASE_DIR
 
 # cho phep dang ky token bang json thay vi from data cua post
-OAUTH2_PROVIDER = {'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
-                   "ACCESS_TOKEN_EXPIRE_SECONDS": 10,  # Token hết hạn sau 5 giây
-                   "REFRESH_TOKEN_EXPIRE_SECONDS": 3600,  # Thời hạn refresh token (tùy chỉnh)
-                   "ROTATE_REFRESH_TOKENS": True,  # Có thể đổi refresh token mỗi lần cấp mới access token
-                   }
+OAUTH2_PROVIDER = {'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore'}
 
 # Cloudinary Configuration
 import cloudinary
