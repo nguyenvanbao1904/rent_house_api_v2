@@ -179,7 +179,7 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
                 query = query.filter(status = status)
             else:
                 query = query.filter(status=RentalPostStatus.ALLOW)
-        if status is None:
+        if status is None and self.action != 'retrieve':
             query = query.filter(status = RentalPostStatus.ALLOW)
         if city:
             query = query.filter(city=city)
