@@ -173,7 +173,8 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         occupants = self.request.GET.get('occupants')
         address = self.request.GET.get('address')
         status = self.request.GET.get('status')
-        area = self.request.GET.get('area')
+        min_area = self.request.GET.get('min_area')
+        max_area = self.request.GET.get('max_area')
 
         if self.request.user.is_authenticated and self.request.user.role == Role.CHU_NHA_TRO:
             query = query.filter(user_id = self.request.user.id)
@@ -198,11 +199,16 @@ class RentalViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
             query = query.filter(Q(max_occupants=occupants) | Q(max_occupants__isnull=True))
         if address:
             query = query.filter(detail_address__icontains=address)
-        if area:
+        if min_area:
             try:
-                query = query.filter(area__gte=int(area) - 5, area__lte=int(area) + 5)
+                query = query.filter(area__gte=min_area)
             except ValueError:
-                raise ValidationError({"area": "Invalid area, must be a number."})
+                raise ValidationError({"area": "Invalid min_area, must be a number."})
+        if max_area:
+            try:
+                query = query.filter(area__lte=max_area)
+            except ValueError:
+                raise ValidationError({"area": "Invalid max_area, must be a number."})
         # **Prefetch comments với GFK**
         rental_post_type = ContentType.objects.get_for_model(RentalPost)
         comments_query = Comment.objects.filter(content_type=rental_post_type).select_related('user_id')
